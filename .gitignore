@@ -1,0 +1,18 @@
+# Build artifacts and binaries
+mini_unionfs
+*.o
+*.out
+*.a
+*.so
+
+# Editor and OS junk
+*.swp
+*~
+.DS_Store
+.vscode/
+.idea/
+
+# Core dumps / debugging
+core
+vgcore.*
+*.log
