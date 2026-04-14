@@ -28,12 +28,19 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    state->lower_dir = strdup(argv[1]);
-    state->upper_dir = strdup(argv[2]);
+    /* Resolve to absolute paths before fuse_main daemonizes (which changes CWD). */
+    state->lower_dir = realpath(argv[1], NULL);
+    state->upper_dir = realpath(argv[2], NULL);
+    char *mount_abs  = realpath(argv[3], NULL);
 
+    if (!state->lower_dir || !state->upper_dir || !mount_abs) {
+        perror("realpath failed");
+        return 1;
+    }
 
-    char *fuse_argv[] = { argv[0], argv[3], "-f", NULL };
-    int fuse_argc = 3;
+    /* Run as a daemon (no -f flag) so the calling shell can continue. */
+    char *fuse_argv[] = { argv[0], mount_abs, NULL };
+    int fuse_argc = 2;
 
     return fuse_main(fuse_argc, fuse_argv, &unionfs_oper, state);
 }
