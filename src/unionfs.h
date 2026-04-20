@@ -2,8 +2,14 @@
 #ifndef UNIONFS_H
 #define UNIONFS_H
 
-// Defines the minimum FUSE API version required (3.1+)
+// FUSE versioning
+#ifdef __APPLE__
+#define FUSE_USE_VERSION 26
+#define FILL_DIR(filler, buf, name, stat, off) filler(buf, name, stat, off)
+#else
 #define FUSE_USE_VERSION 31
+#define FILL_DIR(filler, buf, name, stat, off) filler(buf, name, stat, off, 0)
+#endif
 
 #include <fuse.h>
 #include <sys/stat.h>
@@ -28,13 +34,22 @@ int is_whiteout(const char *virtual_path);
 void build_path(char *out, const char *dir, const char *virtual_path);
 
 // Retrieves file attributes and metadata for the specified path.
+#ifdef __APPLE__
+int unionfs_getattr(const char *path, struct stat *stbuf);
+#else
 int unionfs_getattr(const char *path, struct stat *stbuf,
                     struct fuse_file_info *fi);
+#endif
 
 // Reads directory contents, merging entries from both upper and lower layers.
+#ifdef __APPLE__
+int unionfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
+                    off_t offset, struct fuse_file_info *fi);
+#else
 int unionfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
                     off_t offset, struct fuse_file_info *fi,
                     enum fuse_readdir_flags flags);
+#endif
 
 // Opens a file, executing copy-on-write if modifying a read-only lower file.
 int unionfs_open(const char *path, struct fuse_file_info *fi);

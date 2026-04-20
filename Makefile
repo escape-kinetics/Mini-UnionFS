@@ -1,10 +1,15 @@
-CC     = gcc
-# -Wall         = enable all warnings (good practice)
-# -g            = include debug info (for gdb)
-# -D_FILE_OFFSET_BITS=64 = support files >2GB (required for FUSE)
-# pkg-config    = asks the system where FUSE headers/libs are installed
-CFLAGS = -Wall -g -D_FILE_OFFSET_BITS=64 $(shell pkg-config fuse3 --cflags)
-LIBS   = $(shell pkg-config fuse3 --libs)
+UNAME_S := $(shell uname -s)
+
+ifeq ($(UNAME_S),Darwin)
+    FUSE_PKG := fuse
+    OS_FLAGS := -D__APPLE__
+else
+    FUSE_PKG := fuse3
+    OS_FLAGS :=
+endif
+
+CFLAGS = -Wall -g -D_FILE_OFFSET_BITS=64 $(OS_FLAGS) $(shell pkg-config $(FUSE_PKG) --cflags)
+LIBS   = $(shell pkg-config $(FUSE_PKG) --libs)
 
 TARGET  = mini_unionfs
 SRCS    = src/main.c src/unionfs.c
