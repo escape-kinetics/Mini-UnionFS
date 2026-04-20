@@ -1,5 +1,6 @@
 # Build artifacts and binaries
 mini_unionfs
+mini_unionfs.dSYM/
 *.o
 *.out
 *.a

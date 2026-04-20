@@ -57,9 +57,13 @@ int resolve_path(const char *virtual_path, char *real_path_out) {
     return -ENOENT;
 }
 
+#ifdef __APPLE__
+int unionfs_getattr(const char *path, struct stat *stbuf) {
+#else
 int unionfs_getattr(const char *path, struct stat *stbuf,
                     struct fuse_file_info *fi) {
     (void) fi;
+#endif
 
     if (strcmp(path, "/") == 0) {
         if (lstat(UNIONFS_DATA->upper_dir, stbuf) == -1)
@@ -79,15 +83,22 @@ int unionfs_getattr(const char *path, struct stat *stbuf,
     return 0;
 }
 
+#ifdef __APPLE__
+int unionfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
+                    off_t offset, struct fuse_file_info *fi) {
+    (void) offset;
+    (void) fi;
+#else
 int unionfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
                     off_t offset, struct fuse_file_info *fi,
                     enum fuse_readdir_flags flags) {
     (void) offset;
     (void) fi;
     (void) flags;
+#endif
 
-    filler(buf, ".",  NULL, 0, 0);
-    filler(buf, "..", NULL, 0, 0);
+    FILL_DIR(filler, buf, ".",  NULL, 0);
+    FILL_DIR(filler, buf, "..", NULL, 0);
 
     char upper_path[PATH_MAX];
     build_path(upper_path, UNIONFS_DATA->upper_dir, path);
@@ -100,7 +111,7 @@ int unionfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
                 continue;
             if (strncmp(de->d_name, ".wh.", 4) == 0)
                 continue;
-            filler(buf, de->d_name, NULL, 0, 0);
+            FILL_DIR(filler, buf, de->d_name, NULL, 0);
         }
         closedir(dp);
     }
@@ -131,7 +142,7 @@ int unionfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
             if (lstat(upper_entry, &st) == 0)
                 continue;
 
-            filler(buf, de->d_name, NULL, 0, 0);
+            FILL_DIR(filler, buf, de->d_name, NULL, 0);
         }
         closedir(dp);
     }
